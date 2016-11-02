@@ -16,23 +16,24 @@ package lu.nowina.nexu.api;
 import java.util.List;
 
 import eu.europa.esig.dss.token.SignatureTokenConnection;
+
 import lu.nowina.nexu.api.plugin.HttpPlugin;
 
 /**
  * The API exposes the functionalities to the developer of Plugin.
- * 
+ *
  * @author David Naramski
  */
 public interface NexuAPI {
 
 	List<DetectedCard> detectCards();
-	
+
 	List<Product> detectProducts();
 
 	List<Match> matchingProductAdapters(Product p);
 
 	List<SystrayMenuItem> getExtensionSystrayMenuItems();
-	
+
 	EnvironmentInfo getEnvironmentInfo();
 
 	void registerProductAdapter(ProductAdapter adapter);
@@ -43,13 +44,15 @@ public interface NexuAPI {
 
 	Execution<GetCertificateResponse> getCertificate(GetCertificateRequest request);
 
+	Execution<GetCertificateListResponse> getCertificateList(GetCertificateListRequest r);
+
 	Execution<SignatureResponse> sign(SignatureRequest request);
 
 	Execution<GetIdentityInfoResponse> getIdentityInfo(GetIdentityInfoRequest request);
-	
+
 	Execution<AuthenticateResponse> authenticate(AuthenticateRequest request);
-	
+
 	AppConfig getAppConfig();
-	
+
 	HttpPlugin getHttpPlugin(String pluginId);
 }

@@ -25,6 +25,8 @@ public class GetCertificateResponse {
 
 	private String keyId;
 
+	private String certificateName;
+
 	private CertificateToken certificate;
 
 	private CertificateToken[] certificateChain;
@@ -32,13 +34,13 @@ public class GetCertificateResponse {
 	private EncryptionAlgorithm encryptionAlgorithm;
 
 	private List<DigestAlgorithm> supportedDigests;
-	
+
 	private DigestAlgorithm preferredDigest;
 
 	public GetCertificateResponse() {
 		super();
 	}
-	
+
 	public TokenId getTokenId() {
 		return tokenId;
 	}
@@ -93,5 +95,13 @@ public class GetCertificateResponse {
 
 	public void setPreferredDigest(DigestAlgorithm preferredDigest) {
 		this.preferredDigest = preferredDigest;
+	}
+
+	public String getCertificateName() {
+		return certificateName;
+	}
+
+	public void setCertificateName(String certificateName) {
+		this.certificateName = certificateName;
 	}
 }

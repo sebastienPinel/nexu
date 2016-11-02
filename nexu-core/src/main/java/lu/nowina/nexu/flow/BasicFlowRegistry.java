@@ -29,6 +29,8 @@ public class BasicFlowRegistry implements FlowRegistry {
 		switch (code) {
 		case CERTIFICATE_FLOW:
 			return new GetCertificateFlow(display, api);
+		case CERTIFICATE_LIST_FLOW:
+			return new GetCertificateListFlow(display, api);
 		case SIGNATURE_FLOW:
 			return new SignatureFlow(display, api);
 		default:

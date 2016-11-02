@@ -18,11 +18,21 @@ import java.util.List;
 
 import javax.xml.bind.DatatypeConverter;
 
+import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import eu.europa.esig.dss.DigestAlgorithm;
+import eu.europa.esig.dss.ToBeSigned;
+
 import lu.nowina.nexu.api.AuthenticateRequest;
 import lu.nowina.nexu.api.CertificateFilter;
+import lu.nowina.nexu.api.CertificateListFilter;
 import lu.nowina.nexu.api.Execution;
 import lu.nowina.nexu.api.Feedback;
 import lu.nowina.nexu.api.FeedbackStatus;
+import lu.nowina.nexu.api.GetCertificateListRequest;
 import lu.nowina.nexu.api.GetCertificateRequest;
 import lu.nowina.nexu.api.GetIdentityInfoRequest;
 import lu.nowina.nexu.api.NexuAPI;
@@ -36,14 +46,6 @@ import lu.nowina.nexu.api.plugin.HttpResponse;
 import lu.nowina.nexu.api.plugin.HttpStatus;
 import lu.nowina.nexu.api.plugin.InitializationMessage;
 import lu.nowina.nexu.json.GsonHelper;
-
-import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import eu.europa.esig.dss.DigestAlgorithm;
-import eu.europa.esig.dss.ToBeSigned;
 
 /**
  * Default implementation of HttpPlugin for NexU.
@@ -68,11 +70,13 @@ public class RestHttpPlugin implements HttpPlugin {
 		final String payload = IOUtils.toString(req.getInputStream());
 		logger.info("Payload '" + payload + "'");
 
-		switch(target) {
+		switch (target) {
 		case "/sign":
 			return signRequest(api, req, payload);
 		case "/certificates":
 			return getCertificates(api, req, payload);
+		case "/certificatesList":
+			return getCertificatesList(api, req, payload);
 		case "/identityInfo":
 			return getIdentityInfo(api, payload);
 		case "/authenticate":
@@ -82,10 +86,51 @@ public class RestHttpPlugin implements HttpPlugin {
 		}
 	}
 
+	/**
+	 * @param api
+	 * @param req
+	 * @param payload
+	 * @return
+	 */
+	private HttpResponse getCertificatesList(NexuAPI api, HttpRequest req, String payload) {
+		logger.info("API call all certificates");
+		final GetCertificateListRequest r;
+		if (StringUtils.isEmpty(payload)) {
+			r = new GetCertificateListRequest();
+
+			final String certificatePurpose = req.getParameter("certificatePurpose");
+			if (certificatePurpose != null) {
+				logger.info("Certificate purpose " + certificatePurpose);
+				final Purpose purpose = Enum.valueOf(Purpose.class, certificatePurpose);
+
+				final CertificateListFilter certificateListFilter = new CertificateListFilter();
+				certificateListFilter.setKeyStore("MSCAPI");
+
+				final CertificateFilter certificateFilter = new CertificateFilter();
+				certificateFilter.setPurpose(purpose);
+				certificateListFilter.setCertificateFilter(certificateFilter);
+
+				r.setCertificateFilter(certificateListFilter);
+
+			}
+		} else {
+			r = GsonHelper.fromJson(payload, GetCertificateListRequest.class);
+		}
+
+		final HttpResponse invalidRequestHttpResponse = checkRequestValidity(api, r);
+		if (invalidRequestHttpResponse != null) {
+			return invalidRequestHttpResponse;
+		} else {
+			logger.info("Call API");
+			final Execution<?> respObj = api.getCertificateList(r);
+			return toHttpResponse(respObj);
+		}
+	}
+
 	protected <T> Execution<T> returnNullIfValid(NexuRequest request) {
 		return null;
 	}
-	
+
 	private HttpResponse signRequest(NexuAPI api, HttpRequest req, String payload) {
 		logger.info("Signature");
 		final SignatureRequest r;
@@ -121,7 +166,7 @@ public class RestHttpPlugin implements HttpPlugin {
 		}
 
 		final HttpResponse invalidRequestHttpResponse = checkRequestValidity(api, r);
-		if(invalidRequestHttpResponse != null) {
+		if (invalidRequestHttpResponse != null) {
 			return invalidRequestHttpResponse;
 		} else {
 			logger.info("Call API");
@@ -149,7 +194,7 @@ public class RestHttpPlugin implements HttpPlugin {
 		}
 
 		final HttpResponse invalidRequestHttpResponse = checkRequestValidity(api, r);
-		if(invalidRequestHttpResponse != null) {
+		if (invalidRequestHttpResponse != null) {
 			return invalidRequestHttpResponse;
 		} else {
 			logger.info("Call API");
@@ -168,7 +213,7 @@ public class RestHttpPlugin implements HttpPlugin {
 		}
 
 		final HttpResponse invalidRequestHttpResponse = checkRequestValidity(api, r);
-		if(invalidRequestHttpResponse != null) {
+		if (invalidRequestHttpResponse != null) {
 			return invalidRequestHttpResponse;
 		} else {
 			logger.info("Call API");
@@ -195,7 +240,7 @@ public class RestHttpPlugin implements HttpPlugin {
 		}
 
 		final HttpResponse invalidRequestHttpResponse = checkRequestValidity(api, r);
-		if(invalidRequestHttpResponse != null) {
+		if (invalidRequestHttpResponse != null) {
 			return invalidRequestHttpResponse;
 		} else {
 			logger.info("Call API");
@@ -206,9 +251,9 @@ public class RestHttpPlugin implements HttpPlugin {
 
 	private HttpResponse checkRequestValidity(final NexuAPI api, final NexuRequest request) {
 		final Execution<Object> verification = returnNullIfValid(request);
-		if(verification != null) {
+		if (verification != null) {
 			final Feedback feedback;
-			if(verification.getFeedback() == null) {
+			if (verification.getFeedback() == null) {
 				feedback = new Feedback();
 				feedback.setFeedbackStatus(FeedbackStatus.SIGNATURE_VERIFICATION_FAILED);
 				verification.setFeedback(feedback);
@@ -222,7 +267,7 @@ public class RestHttpPlugin implements HttpPlugin {
 			return null;
 		}
 	}
-	
+
 	private HttpResponse toHttpResponse(final Execution<?> respObj) {
 		if (respObj.isSuccess()) {
 			return new HttpResponse(GsonHelper.toJson(respObj), "application/json;charset=UTF-8", HttpStatus.OK);

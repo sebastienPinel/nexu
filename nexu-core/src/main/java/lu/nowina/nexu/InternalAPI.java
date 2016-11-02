@@ -23,14 +23,20 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadFactory;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import eu.europa.esig.dss.token.SignatureTokenConnection;
+
 import lu.nowina.nexu.api.AppConfig;
 import lu.nowina.nexu.api.AuthenticateRequest;
 import lu.nowina.nexu.api.AuthenticateResponse;
-import lu.nowina.nexu.api.ProductAdapter;
 import lu.nowina.nexu.api.DetectedCard;
 import lu.nowina.nexu.api.EnvironmentInfo;
 import lu.nowina.nexu.api.Execution;
 import lu.nowina.nexu.api.Feedback;
+import lu.nowina.nexu.api.GetCertificateListRequest;
+import lu.nowina.nexu.api.GetCertificateListResponse;
 import lu.nowina.nexu.api.GetCertificateRequest;
 import lu.nowina.nexu.api.GetCertificateResponse;
 import lu.nowina.nexu.api.GetIdentityInfoRequest;
@@ -38,6 +44,7 @@ import lu.nowina.nexu.api.GetIdentityInfoResponse;
 import lu.nowina.nexu.api.Match;
 import lu.nowina.nexu.api.NexuAPI;
 import lu.nowina.nexu.api.Product;
+import lu.nowina.nexu.api.ProductAdapter;
 import lu.nowina.nexu.api.ScAPI;
 import lu.nowina.nexu.api.SignatureRequest;
 import lu.nowina.nexu.api.SignatureResponse;
@@ -56,21 +63,15 @@ import lu.nowina.nexu.generic.SCDatabase;
 import lu.nowina.nexu.generic.SCInfo;
 import lu.nowina.nexu.view.core.UIDisplay;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import eu.europa.esig.dss.token.SignatureTokenConnection;
-
 /**
  * Implementation of the NexuAPI
- * 
- * @author David Naramski
  *
+ * @author David Naramski
  */
 public class InternalAPI implements NexuAPI {
 
 	public static final ThreadGroup EXECUTOR_THREAD_GROUP = new ThreadGroup("ExecutorThreadGroup");
-	
+
 	private Logger logger = LoggerFactory.getLogger(InternalAPI.class.getName());
 
 	private CardDetector detector;
@@ -90,13 +91,13 @@ public class InternalAPI implements NexuAPI {
 	private FlowRegistry flowRegistry;
 
 	private OperationFactory operationFactory;
-	
+
 	private AppConfig appConfig;
-	
+
 	private ExecutorService executor;
 
 	private Future<?> currentTask;
-	
+
 	public InternalAPI(UIDisplay display, SCDatabase myDatabase, CardDetector detector,
 			ProductDatabaseRefresher<SCDatabase> webDatabase, FlowRegistry flowRegistry,
 			OperationFactory operationFactory, AppConfig appConfig) {
@@ -107,8 +108,8 @@ public class InternalAPI implements NexuAPI {
 		this.flowRegistry = flowRegistry;
 		this.operationFactory = operationFactory;
 		this.appConfig = appConfig;
-		this.connections = new FIFOCache<>(this.appConfig.getConnectionsCacheMaxSize());
-		this.executor = Executors.newSingleThreadExecutor(new ThreadFactory() {
+		connections = new FIFOCache<>(this.appConfig.getConnectionsCacheMaxSize());
+		executor = Executors.newSingleThreadExecutor(new ThreadFactory() {
 			@Override
 			public Thread newThread(Runnable r) {
 				final Thread t = new Thread(EXECUTOR_THREAD_GROUP, r);
@@ -116,7 +117,7 @@ public class InternalAPI implements NexuAPI {
 				return t;
 			}
 		});
-		this.currentTask = null;
+		currentTask = null;
 	}
 
 	@Override
@@ -188,11 +189,11 @@ public class InternalAPI implements NexuAPI {
 		Execution<O> resp = null;
 
 		try {
-			if(!EXECUTOR_THREAD_GROUP.equals(Thread.currentThread().getThreadGroup())) {
+			if (!EXECUTOR_THREAD_GROUP.equals(Thread.currentThread().getThreadGroup())) {
 				final Future<Execution<O>> task;
 				// Prevent race condition on currentTask
 				synchronized (this) {
-					if((currentTask != null) && !currentTask.isDone()) {
+					if ((currentTask != null) && !currentTask.isDone()) {
 						currentTask.cancel(true);
 					}
 
@@ -207,11 +208,11 @@ public class InternalAPI implements NexuAPI {
 				// Allow re-entrant calls
 				resp = flow.execute(this, request);
 			}
-			if(resp == null) {
+			if (resp == null) {
 				resp = new Execution<O>(CoreOperationStatus.NO_RESPONSE);
 			}
 			return resp;
-		}  catch (Exception e) {
+		} catch (Exception e) {
 			resp = new Execution<O>(BasicOperationStatus.EXCEPTION);
 			logger.error("Cannot execute request", e);
 			final Feedback feedback = new Feedback(e);
@@ -219,49 +220,57 @@ public class InternalAPI implements NexuAPI {
 			return resp;
 		} finally {
 			final Feedback feedback;
-			if(resp.getFeedback() == null) {
+			if (resp.getFeedback() == null) {
 				feedback = new Feedback();
 				resp.setFeedback(feedback);
 			} else {
 				feedback = resp.getFeedback();
 			}
-			feedback.setNexuVersion(this.getAppConfig().getApplicationVersion());
-			feedback.setInfo(this.getEnvironmentInfo());
+			feedback.setNexuVersion(getAppConfig().getApplicationVersion());
+			feedback.setInfo(getEnvironmentInfo());
 		}
 	}
 
 	@Override
 	public Execution<GetCertificateResponse> getCertificate(GetCertificateRequest request) {
-		Flow<GetCertificateRequest, GetCertificateResponse> flow =
-				flowRegistry.getFlow(FlowRegistry.CERTIFICATE_FLOW, display, this);
+		Flow<GetCertificateRequest, GetCertificateResponse> flow = flowRegistry.getFlow(FlowRegistry.CERTIFICATE_FLOW,
+				display, this);
+		flow.setOperationFactory(operationFactory);
+		return executeRequest(flow, request);
+	}
+
+	@Override
+	public Execution<GetCertificateListResponse> getCertificateList(GetCertificateListRequest request) {
+		Flow<GetCertificateListRequest, GetCertificateListResponse> flow = flowRegistry.getFlow(
+				FlowRegistry.CERTIFICATE_LIST_FLOW, display, this);
 		flow.setOperationFactory(operationFactory);
 		return executeRequest(flow, request);
 	}
 
 	@Override
 	public Execution<SignatureResponse> sign(SignatureRequest request) {
-		Flow<SignatureRequest, SignatureResponse> flow =
-				flowRegistry.getFlow(FlowRegistry.SIGNATURE_FLOW, display, this);
+		Flow<SignatureRequest, SignatureResponse> flow = flowRegistry.getFlow(FlowRegistry.SIGNATURE_FLOW, display,
+				this);
 		flow.setOperationFactory(operationFactory);
 		return executeRequest(flow, request);
 	}
 
 	@Override
 	public Execution<GetIdentityInfoResponse> getIdentityInfo(GetIdentityInfoRequest request) {
-		final Flow<GetIdentityInfoRequest, GetIdentityInfoResponse> flow =
-				flowRegistry.getFlow(FlowRegistry.GET_IDENTITY_INFO_FLOW, display, this);
+		final Flow<GetIdentityInfoRequest, GetIdentityInfoResponse> flow = flowRegistry.getFlow(
+				FlowRegistry.GET_IDENTITY_INFO_FLOW, display, this);
 		flow.setOperationFactory(operationFactory);
 		return executeRequest(flow, request);
 	}
-	
+
 	@Override
 	public Execution<AuthenticateResponse> authenticate(AuthenticateRequest request) {
-		final Flow<AuthenticateRequest, AuthenticateResponse> flow =
-				flowRegistry.getFlow(FlowRegistry.AUTHENTICATE_FLOW, display, this);
+		final Flow<AuthenticateRequest, AuthenticateResponse> flow = flowRegistry.getFlow(
+				FlowRegistry.AUTHENTICATE_FLOW, display, this);
 		flow.setOperationFactory(operationFactory);
 		return executeRequest(flow, request);
 	}
-	
+
 	@Override
 	public HttpPlugin getHttpPlugin(String context) {
 		return httpPlugins.get(context);
@@ -292,9 +301,9 @@ public class InternalAPI implements NexuAPI {
 	@Override
 	public List<SystrayMenuItem> getExtensionSystrayMenuItems() {
 		final List<SystrayMenuItem> result = new ArrayList<>();
-		for(final ProductAdapter adapter : adapters) {
+		for (final ProductAdapter adapter : adapters) {
 			final SystrayMenuItem menuItem = adapter.getExtensionSystrayMenuItem();
-			if(menuItem != null) {
+			if (menuItem != null) {
 				result.add(menuItem);
 			}
 		}
@@ -304,7 +313,7 @@ public class InternalAPI implements NexuAPI {
 	@Override
 	public List<Product> detectProducts() {
 		final List<Product> result = new ArrayList<>();
-		for(final ProductAdapter adapter : adapters) {
+		for (final ProductAdapter adapter : adapters) {
 			result.addAll(adapter.detectProducts());
 		}
 		return result;

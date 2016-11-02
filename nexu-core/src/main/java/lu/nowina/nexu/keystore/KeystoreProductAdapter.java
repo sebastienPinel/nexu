@@ -30,6 +30,7 @@ import eu.europa.esig.dss.token.JKSSignatureToken;
 import eu.europa.esig.dss.token.PasswordInputCallback;
 import eu.europa.esig.dss.token.Pkcs12SignatureToken;
 import eu.europa.esig.dss.token.SignatureTokenConnection;
+
 import lu.nowina.nexu.NexuException;
 import lu.nowina.nexu.ProductDatabaseLoader;
 import lu.nowina.nexu.api.CertificateFilter;
@@ -53,7 +54,7 @@ import lu.nowina.nexu.view.core.UIOperation;
 public class KeystoreProductAdapter implements ProductAdapter {
 
 	private final File nexuHome;
-	
+
 	public KeystoreProductAdapter(final File nexuHome) {
 		super();
 		this.nexuHome = nexuHome;
@@ -125,9 +126,9 @@ public class KeystoreProductAdapter implements ProductAdapter {
 			throw new IllegalArgumentException("Given product was not configured!");
 		} else {
 			final ConfiguredKeystore keystore = (ConfiguredKeystore) product;
-			if(keystore.isToBeSaved()) {
-				return UIOperation.getFutureOperationInvocation(UIOperation.class, "/fxml/save-keystore.fxml",
-					api.getAppConfig().getApplicationName(), this, keystore);
+			if (keystore.isToBeSaved()) {
+				return UIOperation.getFutureOperationInvocation(UIOperation.class, "/fxml/save-keystore.fxml", api
+						.getAppConfig().getApplicationName(), this, keystore);
 			} else {
 				return new NoOpFutureOperationInvocation<Boolean>(true);
 			}
@@ -141,15 +142,15 @@ public class KeystoreProductAdapter implements ProductAdapter {
 			public String getLabel() {
 				return ResourceBundle.getBundle("bundles/nexu").getString("systray.menu.manage.keystores");
 			}
-			
+
 			@Override
 			public FutureOperationInvocation<Void> getFutureOperationInvocation() {
-				return UIOperation.getFutureOperationInvocation(NonBlockingUIOperation.class, "/fxml/manage-keystores.fxml",
-						getDatabase());
+				return UIOperation.getFutureOperationInvocation(NonBlockingUIOperation.class,
+						"/fxml/manage-keystores.fxml", getDatabase());
 			}
 		};
 	}
-	
+
 	@Override
 	public List<Product> detectProducts() {
 		final List<Product> products = new ArrayList<>();
@@ -161,17 +162,19 @@ public class KeystoreProductAdapter implements ProductAdapter {
 	private KeystoreDatabase getDatabase() {
 		return ProductDatabaseLoader.load(KeystoreDatabase.class, new File(nexuHome, "keystore-database.xml"));
 	}
-	
+
 	public void saveKeystore(final ConfiguredKeystore keystore) {
 		getDatabase().add(keystore);
 	}
-	
+
 	private static class KeystoreTokenProxy implements SignatureTokenConnection {
 
 		private SignatureTokenConnection proxied;
+
 		private final ConfiguredKeystore configuredKeystore;
+
 		private final PasswordInputCallback callback;
-				
+
 		public KeystoreTokenProxy(ConfiguredKeystore configuredKeystore, PasswordInputCallback callback) {
 			super();
 			this.configuredKeystore = configuredKeystore;
@@ -179,18 +182,18 @@ public class KeystoreProductAdapter implements ProductAdapter {
 		}
 
 		private void initSignatureTokenConnection() {
-			if(proxied != null) {
+			if (proxied != null) {
 				return;
 			}
 			try {
-				switch(configuredKeystore.getType()) {
+				switch (configuredKeystore.getType()) {
 				case PKCS12:
-					proxied = new Pkcs12SignatureToken(new String(callback.getPassword()),
-							new URL(configuredKeystore.getUrl()).openStream());
+					proxied = new Pkcs12SignatureToken(new String(callback.getPassword()), new URL(
+							configuredKeystore.getUrl()).openStream());
 					break;
 				case JKS:
-					proxied = new JKSSignatureToken(new URL(configuredKeystore.getUrl()).openStream(),
-							new String(callback.getPassword()));
+					proxied = new JKSSignatureToken(new URL(configuredKeystore.getUrl()).openStream(), new String(
+							callback.getPassword()));
 					break;
 				default:
 					throw new IllegalStateException("Unhandled keystore type: " + configuredKeystore.getType());
@@ -201,11 +204,12 @@ public class KeystoreProductAdapter implements ProductAdapter {
 				throw new NexuException(e);
 			}
 		}
-		
+
 		@Override
 		public void close() {
 			final SignatureTokenConnection stc = proxied;
-			// Always nullify proxied even in case of exception when calling close()
+			// Always nullify proxied even in case of exception when calling
+			// close()
 			proxied = null;
 			stc.close();
 		}

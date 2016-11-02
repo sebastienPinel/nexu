@@ -33,6 +33,7 @@ import org.slf4j.LoggerFactory;
 
 import freemarker.template.Configuration;
 import freemarker.template.Template;
+
 import lu.nowina.nexu.ConfigurationException;
 import lu.nowina.nexu.TechnicalException;
 import lu.nowina.nexu.api.Execution;
@@ -49,12 +50,15 @@ public class RequestProcessor extends AbstractHandler {
 	private static final Logger logger = LoggerFactory.getLogger(RequestProcessor.class.getName());
 
 	private static final String UTF8 = "UTF-8";
-	
+
 	private static final String TEXT_JAVASCRIPT = "text/javascript";
+
 	private static final String TEXT_PLAIN = "text/plain";
+
 	private static final String APPLICATION_JSON = "application/json";
+
 	private static final String IMAGE_PNG = "image/png";
-	
+
 	private static final String NEXUJS_TEMPLATE = "nexu.ftl.js";
 
 	private NexuAPI api;
@@ -67,7 +71,7 @@ public class RequestProcessor extends AbstractHandler {
 		try {
 			Configuration cfg = new Configuration(Configuration.VERSION_2_3_22);
 			cfg.setClassForTemplateLoading(getClass(), "/");
-			this.template = cfg.getTemplate(NEXUJS_TEMPLATE, UTF8);
+			template = cfg.getTemplate(NEXUJS_TEMPLATE, UTF8);
 		} catch (IOException e) {
 			logger.error("Cannot find template for nexu", e);
 			throw new ConfigurationException("Cannot find template for nexu");
@@ -77,13 +81,14 @@ public class RequestProcessor extends AbstractHandler {
 	public void setConfig(NexuAPI api) {
 		this.api = api;
 	}
-	
+
 	public void setNexuHostname(String nexuHostname) {
 		this.nexuHostname = nexuHostname;
 	}
 
 	@Override
-	public void handle(String target, Request arg1, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
+	public void handle(String target, Request arg1, HttpServletRequest request, HttpServletResponse response)
+			throws IOException, ServletException {
 		if (!"0:0:0:0:0:0:0:1".equals(request.getRemoteHost()) && !"127.0.0.1".equals(request.getRemoteHost())) {
 			logger.warn("Cannot accept request from " + request.getRemoteHost());
 			response.setStatus(HttpStatus.ERROR.getHttpCode());
@@ -96,7 +101,7 @@ public class RequestProcessor extends AbstractHandler {
 		}
 
 		final String errorMessage = returnNullIfValid(request);
-		if(errorMessage != null) {
+		if (errorMessage != null) {
 			logger.warn("Invalid request " + errorMessage);
 			response.setStatus(HttpStatus.ERROR.getHttpCode());
 			response.setCharacterEncoding(UTF8);
@@ -106,7 +111,7 @@ public class RequestProcessor extends AbstractHandler {
 			writer.close();
 			return;
 		}
-		
+
 		response.setHeader("Access-Control-Allow-Origin", "*");
 		response.setHeader("Access-Control-Allow-Methods", "OPTIONS, GET, POST");
 		response.setHeader("Access-Control-Allow-Headers", "Content-Type");
@@ -126,22 +131,34 @@ public class RequestProcessor extends AbstractHandler {
 				nexuJs(request, response);
 			} else if ("/".equals(target) || "/nexu-info".equals(target)) {
 				nexuInfo(response);
+			} else if ("/crossdomain.xml".equals(target)) {
+
+				String content = "<?xml version=\"1.0\"?> " + "<!-- http://www.foo.com/crossdomain.xml -->"
+						+ " <cross-domain-policy> " + "    <site-control permitted-cross-domain-policies=\"all\"/>"
+						+ "    <allow-access-from domain=\"*\"/> " + " </cross-domain-policy>";
+				String contentType = "text/xml;charset=UTF-8";
+
+				response.setStatus(HttpStatus.OK.getHttpCode());
+				response.setContentType(contentType);
+				PrintWriter writer = response.getWriter();
+				writer.write(content);
+				writer.close();
 			} else {
 				httpPlugin(target, request, response);
 			}
-		} catch(Exception e) {
+		} catch (Exception e) {
 			logger.error("Cannot process request", e);
 			try {
 				response.setStatus(HttpStatus.ERROR.getHttpCode());
 				response.setCharacterEncoding(UTF8);
 				response.setContentType(APPLICATION_JSON);
-				
+
 				final Execution<?> execution = new Execution<Object>(BasicOperationStatus.EXCEPTION);
 				final Feedback feedback = new Feedback(e);
 				feedback.setNexuVersion(api.getAppConfig().getApplicationVersion());
 				feedback.setInfo(api.getEnvironmentInfo());
 				execution.setFeedback(feedback);
-				
+
 				final PrintWriter writer = response.getWriter();
 				writer.write(GsonHelper.toJson(execution));
 				writer.close();
@@ -153,15 +170,18 @@ public class RequestProcessor extends AbstractHandler {
 
 	/**
 	 * This method checks the validity of the given request.
-	 * <p>This implementation returns <code>null</code> by contract.
-	 * @param request The request to check.
-	 * @return An error message if request is invalid or <code>null</code>
-	 * if the request is valid.
+	 * <p>
+	 * This implementation returns <code>null</code> by contract.
+	 *
+	 * @param request
+	 *            The request to check.
+	 * @return An error message if request is invalid or <code>null</code> if
+	 *         the request is valid.
 	 */
 	protected String returnNullIfValid(final HttpServletRequest request) {
 		return null;
 	}
-	
+
 	private void httpPlugin(String target, HttpServletRequest request, HttpServletResponse response) throws Exception {
 		int index = target.indexOf("/", 1);
 		String pluginId = target.substring(target.charAt(0) == '/' ? 1 : 0, index);

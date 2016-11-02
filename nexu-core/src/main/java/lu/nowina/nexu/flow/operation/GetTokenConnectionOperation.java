@@ -13,17 +13,18 @@
  */
 package lu.nowina.nexu.flow.operation;
 
+import eu.europa.esig.dss.token.SignatureTokenConnection;
+
 import lu.nowina.nexu.api.NexuAPI;
 import lu.nowina.nexu.api.TokenId;
 import lu.nowina.nexu.api.flow.Operation;
 import lu.nowina.nexu.api.flow.OperationResult;
-import eu.europa.esig.dss.token.SignatureTokenConnection;
 
 /**
- * This {@link Operation} allows to retrieve a {@link SignatureTokenConnection} associated
- * to a {@link TokenId}.
- *
- * <p>Expected parameters:
+ * This {@link Operation} allows to retrieve a {@link SignatureTokenConnection}
+ * associated to a {@link TokenId}.
+ * <p>
+ * Expected parameters:
  * <ol>
  * <li>{@link NexuAPI}</li>
  * <li>{@link TokenId}</li>
@@ -34,8 +35,9 @@ import eu.europa.esig.dss.token.SignatureTokenConnection;
 public class GetTokenConnectionOperation implements Operation<SignatureTokenConnection> {
 
 	private NexuAPI api;
+
 	private TokenId tokenId;
-	
+
 	public GetTokenConnectionOperation() {
 		super();
 	}
@@ -43,9 +45,9 @@ public class GetTokenConnectionOperation implements Operation<SignatureTokenConn
 	@Override
 	public void setParams(Object... params) {
 		try {
-			this.api = (NexuAPI) params[0];
-			this.tokenId = (TokenId) params[1];
-		} catch(final ClassCastException | ArrayIndexOutOfBoundsException e) {
+			api = (NexuAPI) params[0];
+			tokenId = (TokenId) params[1];
+		} catch (final ClassCastException | ArrayIndexOutOfBoundsException e) {
 			throw new IllegalArgumentException("Expected parameters: NexuAPI, TokenId");
 		}
 	}
@@ -53,11 +55,11 @@ public class GetTokenConnectionOperation implements Operation<SignatureTokenConn
 	@Override
 	public OperationResult<SignatureTokenConnection> perform() {
 		final SignatureTokenConnection token = api.getTokenConnection(tokenId);
-		if(token != null) {
+		if (token != null) {
 			return new OperationResult<SignatureTokenConnection>(token);
 		} else {
 			return new OperationResult<SignatureTokenConnection>(CoreOperationStatus.UNKNOWN_TOKEN_ID);
 		}
 	}
-	
+
 }
