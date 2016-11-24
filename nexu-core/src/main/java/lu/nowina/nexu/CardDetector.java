@@ -41,18 +41,18 @@ public class CardDetector {
 	private static final Logger logger = LoggerFactory.getLogger(CardDetector.class.getSimpleName());
 
 	public CardDetector(EnvironmentInfo info) {
-		try {
-			if (info.getOs() == OS.LINUX) {
-				logger.info("The OS is Linux, we check for Library");
-				File libFile = at.gv.egiz.smcc.util.LinuxLibraryFinder.getLibraryPath("pcsclite", "1");
-				if (libFile != null) {
-					logger.info("Library installed is " + libFile.getAbsolutePath());
-					System.setProperty("sun.security.smartcardio.library", libFile.getAbsolutePath());
-				}
-			}
-		} catch (Exception e) {
-			logger.error("Error while loading library for Linux", e);
-		}
+//		try {
+//			if (info.getOs() == OS.LINUX) {
+//				logger.info("The OS is Linux, we check for Library");
+//				File libFile = at.gv.egiz.smcc.util.LinuxLibraryFinder.getLibraryPath("pcsclite", "1");
+//				if (libFile != null) {
+//					logger.info("Library installed is " + libFile.getAbsolutePath());
+//					System.setProperty("sun.security.smartcardio.library", libFile.getAbsolutePath());
+//				}
+//			}
+//		} catch (Exception e) {
+//			logger.error("Error while loading library for Linux", e);
+//		}
 	}
 
 	/**

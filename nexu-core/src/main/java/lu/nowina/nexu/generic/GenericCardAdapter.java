@@ -21,7 +21,6 @@ import eu.europa.esig.dss.token.MSCAPISignatureToken;
 import eu.europa.esig.dss.token.PasswordInputCallback;
 import eu.europa.esig.dss.token.Pkcs11SignatureToken;
 import eu.europa.esig.dss.token.SignatureTokenConnection;
-import eu.europa.esig.dss.token.mocca.MOCCASignatureTokenConnection;
 import lu.nowina.nexu.api.AbstractCardProductAdapter;
 import lu.nowina.nexu.api.CertificateFilter;
 import lu.nowina.nexu.api.DetectedCard;
@@ -53,9 +52,9 @@ public class GenericCardAdapter extends AbstractCardProductAdapter {
 		case PKCS_11:
 			String absolutePath = cInfo.getApiParam();
 			return new Pkcs11SignatureToken(absolutePath, callback, card.getTerminalIndex());
-		case MOCCA:
-			MOCCASignatureTokenConnection mocca = new MOCCASignatureTokenConnection(callback);
-			return mocca;
+//		case MOCCA:
+//			MOCCASignatureTokenConnection mocca = new MOCCASignatureTokenConnection(callback);
+//			return mocca;
 		default:
 			throw new RuntimeException("API not supported");
 		}

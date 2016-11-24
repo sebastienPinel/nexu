@@ -80,8 +80,6 @@ public class APISelectionController extends AbstractUIOperationController<ScAPI>
 			return ScAPI.MSCAPI;
 		} else if (pkcs11.isSelected()) {
 			return ScAPI.PKCS_11;
-		} else if (mocca.isSelected()) {
-			return ScAPI.MOCCA;
 		}
 		return null;
 	}

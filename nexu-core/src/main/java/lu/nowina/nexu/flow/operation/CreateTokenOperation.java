@@ -23,7 +23,6 @@ import org.slf4j.LoggerFactory;
 import eu.europa.esig.dss.token.MSCAPISignatureToken;
 import eu.europa.esig.dss.token.Pkcs11SignatureToken;
 import eu.europa.esig.dss.token.SignatureTokenConnection;
-import eu.europa.esig.dss.token.mocca.MOCCASignatureTokenConnection;
 import lu.nowina.nexu.api.DetectedCard;
 import lu.nowina.nexu.api.Feedback;
 import lu.nowina.nexu.api.FeedbackStatus;
@@ -150,9 +149,9 @@ public class CreateTokenOperation extends AbstractCompositeOperation<Map<TokenOp
 		map.put(TokenOperationResultKey.SELECTED_PRODUCT, selectedCard);
 		final TokenId tokenId;
 		switch (result.getResult()) {
-		case MOCCA:
-			tokenId = api.registerTokenConnection(new MOCCASignatureTokenConnection(display.getPasswordInputCallback()));
-			break;
+//		case MOCCA:
+//			tokenId = api.registerTokenConnection(new MOCCASignatureTokenConnection(display.getPasswordInputCallback()));
+//			break;
 		case MSCAPI:
 			tokenId = api.registerTokenConnection(new MSCAPISignatureToken());
 			break;
