@@ -13,6 +13,8 @@
  */
 package lu.nowina.nexu.flow;
 
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -144,7 +146,10 @@ class GetCertificateListFlow extends AbstractCoreFlow<GetCertificateListRequest,
 								resp2.setCertificate(certificate);
 								resp2.setKeyId(certificate.getDSSIdAsString());
 								resp2.setEncryptionAlgorithm(certificate.getEncryptionAlgorithm());
-
+								resp2.setIssuerName(certificate.getIssuerDN().getName());
+								DateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+								resp2.setIssuedDate(df.format(certificate.getNotBefore()));
+								resp2.setEndValidityDate(df.format(certificate.getNotAfter()));
 								final CertificateToken[] certificateChain = key.getCertificateChain();
 								if (certificateChain != null) {
 									resp2.setCertificateChain(certificateChain);

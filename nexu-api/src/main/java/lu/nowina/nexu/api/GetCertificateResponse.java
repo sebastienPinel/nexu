@@ -27,6 +27,12 @@ public class GetCertificateResponse {
 
 	private String certificateName;
 
+	private String issuerName;
+
+	private String issuedDate;
+
+	private String endValidityDate;
+
 	private CertificateToken certificate;
 
 	private CertificateToken[] certificateChain;
@@ -103,5 +109,62 @@ public class GetCertificateResponse {
 
 	public void setCertificateName(String certificateName) {
 		this.certificateName = certificateName;
+	}
+
+	/**
+	 * Return issuerName.
+	 *
+	 * @return issuerName
+	 */
+	public String getIssuerName() {
+		return issuerName;
+	}
+
+	/**
+	 * Set issuerName.
+	 *
+	 * @param issuerName
+	 *            issuerName
+	 */
+	public void setIssuerName(String issuerName) {
+		this.issuerName = issuerName;
+	}
+
+	/**
+	 * Return issuedDate.
+	 *
+	 * @return issuedDate
+	 */
+	public String getIssuedDate() {
+		return issuedDate;
+	}
+
+	/**
+	 * Set issuedDate.
+	 *
+	 * @param issuedDate
+	 *            issuedDate
+	 */
+	public void setIssuedDate(String issuedDate) {
+		this.issuedDate = issuedDate;
+	}
+
+	/**
+	 * Return endValidityDate.
+	 * 
+	 * @return endValidityDate
+	 */
+	public String getEndValidityDate() {
+		return endValidityDate;
+	}
+
+	/**
+	 * Set endValidityDate.
+	 * 
+	 * @param endValidityDate
+	 *            endValidityDate
+	 */
+	public void setEndValidityDate(String endValidityDate) {
+		this.endValidityDate = endValidityDate;
 	}
 }
